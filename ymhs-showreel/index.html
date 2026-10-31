@@ -1,0 +1,1079 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>梅岡時光機</title>
+<meta name="description" content="楊梅高中 1948–2026 空照與衛星影像變遷：互動式動態圖文教學短片（單一 HTML＋內嵌 SVG）">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@500;700;900&family=Baloo+2:wght@600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --cream:#FFF6E5; --navy:#1F2A56; --coral:#FF6F61; --sun:#FFC93C; --mint:#4FD1A5; --sky:#4FB3E8;
+  --ui-bg:#141a33; --ui-fg:#f4f6ff; --ui-dim:#9aa3c7;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--ui-bg);color:var(--ui-fg);
+  font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;overflow:hidden}
+#app{position:fixed;inset:0;display:flex;flex-direction:column}
+#viewport{flex:1;position:relative;overflow:hidden;background:#0d1226}
+#stage{position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:0 0;background:var(--cream)}
+#stage svg{display:block;width:1920px;height:1080px}
+svg text{font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif}
+.num{font-family:"Baloo 2","Noto Sans TC",sans-serif}
+
+#cover{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:18px;
+  background:rgba(13,18,38,.55);backdrop-filter:blur(2px);cursor:pointer;z-index:5}
+#cover button{font:inherit;font-size:22px;font-weight:900;border:0;border-radius:999px;padding:18px 34px;
+  background:var(--coral);color:#fff;box-shadow:0 8px 0 #c94a3e;cursor:pointer}
+#cover p{margin:0;color:#dfe5ff;font-size:15px;text-align:center;padding:0 16px;line-height:1.6}
+#cover.hidden{display:none}
+
+#controls{flex:none;display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--ui-bg);flex-wrap:wrap}
+#controls button{font:inherit;font-size:14px;font-weight:700;border:1px solid #2c3561;background:#1d2547;color:var(--ui-fg);
+  border-radius:8px;padding:7px 11px;cursor:pointer;white-space:nowrap}
+#controls button[aria-pressed="false"]{color:var(--ui-dim);text-decoration:line-through}
+#controls button:hover{border-color:#4a5799}
+#playBtn{min-width:44px;background:var(--coral)!important;border-color:var(--coral)!important}
+#time{font-variant-numeric:tabular-nums;font-size:14px;color:var(--ui-dim);min-width:104px}
+#seekWrap{position:relative;flex:1 1 260px;min-width:180px;height:30px;display:flex;align-items:center}
+#seek{width:100%;accent-color:var(--coral);position:relative;z-index:2}
+#ticks{position:absolute;left:0;right:0;top:0;bottom:0;pointer-events:none}
+#ticks span{position:absolute;top:3px;width:2px;height:8px;background:var(--sun);border-radius:1px}
+#chips{display:flex;gap:6px;flex-wrap:wrap;padding:0 14px 10px;background:var(--ui-bg)}
+#chips button{font:inherit;font-size:13px;font-weight:700;border:0;border-radius:999px;padding:5px 11px;background:#232c55;color:#cfd6ff;cursor:pointer}
+#chips button.on{background:var(--sun);color:#3a2a00}
+label.vol{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ui-dim)}
+label.vol input{width:80px;accent-color:var(--mint)}
+
+#drawer{position:absolute;right:0;top:0;bottom:0;width:min(380px,100%);background:#f9f3e6;color:var(--navy);z-index:6;
+  transform:translateX(100%);transition:transform .25s ease;overflow:auto;padding:18px 18px 30px;box-shadow:-8px 0 24px rgba(0,0,0,.35)}
+#drawer.open{transform:none}
+#drawer h2{margin:0 0 6px;font-size:20px}
+#drawer p{font-size:13px;line-height:1.6;margin:6px 0 12px;color:#4a4f6a}
+#drawer .row{display:grid;grid-template-columns:92px 1fr auto;gap:8px;align-items:center;padding:8px 0;border-bottom:1px dashed #d8cdb6}
+#drawer .row b{font-size:15px}
+#drawer .row small{display:block;font-size:11px;color:#7a7f99;font-weight:500}
+#drawer input[type=file]{font-size:12px;width:100%}
+#drawer .row button{font:inherit;font-size:12px;border:1px solid #c9bda4;background:#fff;border-radius:6px;padding:4px 8px;cursor:pointer}
+#drawer .close{float:right;font:inherit;font-size:20px;border:0;background:none;cursor:pointer;color:var(--navy)}
+#drawer label.mix{display:flex;gap:8px;align-items:center;font-size:14px;font-weight:700;margin:6px 0 10px}
+#drawer label.mix input{flex:1;accent-color:var(--coral)}
+@media (max-width:640px){#controls{gap:6px;padding:6px 8px}#controls button{padding:6px 8px;font-size:13px}label.vol{display:none}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="viewport">
+    <div id="stage">
+      <svg id="svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" role="img" aria-label="梅岡時光機：楊梅高中空照與衛星影像變遷動態短片">
+        <defs>
+          <pattern id="gridPaper" width="48" height="48" patternUnits="userSpaceOnUse">
+            <path d="M48 0H0V48" fill="none" stroke="#cfe6f5" stroke-width="2"/>
+          </pattern>
+          <pattern id="paddyA" width="10" height="10" patternUnits="userSpaceOnUse">
+            <rect width="10" height="10" fill="#8fc46a"/><path d="M0 2H10M0 7H10" stroke="#7bb35a" stroke-width="1.6"/>
+          </pattern>
+          <pattern id="paddyB" width="10" height="10" patternUnits="userSpaceOnUse">
+            <rect width="10" height="10" fill="#a6d07a"/><path d="M2 0V10M7 0V10" stroke="#93c068" stroke-width="1.6"/>
+          </pattern>
+          <pattern id="paddyC" width="12" height="12" patternUnits="userSpaceOnUse">
+            <rect width="12" height="12" fill="#c7cf7e"/><path d="M0 3H12M0 9H12" stroke="#b3bd6c" stroke-width="1.4"/>
+          </pattern>
+          <pattern id="grain" width="120" height="120" patternUnits="userSpaceOnUse"><g id="grainDots"></g></pattern>
+          <filter id="era" filterUnits="userSpaceOnUse" x="0" y="0" width="920" height="575">
+            <feGaussianBlur id="eraBlur" stdDeviation="1"/>
+            <feColorMatrix id="eraSat" type="saturate" values="0"/>
+          </filter>
+          <clipPath id="imgClip"><rect x="0" y="0" width="920" height="575"/></clipPath>
+          <radialGradient id="vign" cx="50%" cy="50%" r="70%">
+            <stop offset="60%" stop-color="#000" stop-opacity="0"/><stop offset="100%" stop-color="#000" stop-opacity=".55"/>
+          </radialGradient>
+          <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#6cc8ff"/><stop offset="1" stop-color="#d6f3ff"/>
+          </linearGradient>
+          <radialGradient id="ocean" cx="40%" cy="35%" r="75%">
+            <stop offset="0" stop-color="#8fdcff"/><stop offset="1" stop-color="#2f8fd1"/>
+          </radialGradient>
+          <linearGradient id="scanG" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#7ff7ff" stop-opacity="0"/><stop offset=".85" stop-color="#7ff7ff" stop-opacity=".35"/><stop offset="1" stop-color="#ffffff" stop-opacity=".95"/>
+          </linearGradient>
+          <clipPath id="globeClip"><circle cx="0" cy="0" r="330"/></clipPath>
+        </defs>
+
+        <!-- ===== MAIN LAYOUT ===== -->
+        <g id="main">
+          <rect width="1920" height="1080" fill="#FFF6E5"/>
+          <rect width="1920" height="1080" fill="url(#gridPaper)" opacity=".7"/>
+          <g id="doodles"></g>
+
+          <!-- header -->
+          <g id="header">
+            <g transform="translate(128 92)">
+              <circle r="48" fill="#FF6F61"/>
+              <g id="logoPetals" fill="#fff"></g>
+              <circle r="9" fill="#FFC93C"/>
+            </g>
+            <text x="196" y="104" font-size="58" font-weight="900" fill="#1F2A56">梅岡時光機</text>
+            <text x="198" y="146" font-size="24" font-weight="700" fill="#5a6390">楊梅高中・空照 × 衛星影像 1948–2026（示意重建）</text>
+            <text id="yearBig" class="num" x="1830" y="128" font-size="112" font-weight="800" fill="#FF6F61" text-anchor="end">1948</text>
+            <text id="rocTxt" x="1830" y="164" font-size="26" font-weight="900" fill="#1F2A56" text-anchor="end">民國 37 年</text>
+            <g id="yearUnder" transform="translate(1590 70)"></g>
+          </g>
+
+          <!-- polaroid with map -->
+          <g id="polaroid">
+            <rect x="-6" y="10" width="968" height="680" rx="6" fill="#000" opacity=".16"/>
+            <rect x="-24" y="-24" width="968" height="675" rx="6" fill="#ffffff" stroke="#eadfca" stroke-width="2"/>
+            <g clip-path="url(#imgClip)">
+              <rect width="920" height="575" fill="#a9c98a"/>
+              <g id="eraGroup" filter="url(#era)">
+                <g id="cam"><g id="map"></g></g>
+              </g>
+              <rect id="sepia" width="920" height="575" fill="#d9c49a" style="mix-blend-mode:multiply" opacity="0"/>
+              <rect id="grainRect" width="920" height="575" fill="url(#grain)" opacity="0"/>
+              <rect id="vignRect" width="920" height="575" fill="url(#vign)" opacity="0"/>
+              <image id="realImg" x="0" y="0" width="920" height="575" preserveAspectRatio="xMidYMid slice" opacity="0"/>
+              <g id="annLayer"></g>
+              <rect id="scan" x="0" y="-80" width="920" height="80" fill="url(#scanG)" opacity="0"/>
+              <g id="pageTurn" opacity="0">
+                <polygon id="ptPoly" fill="#FFF6E5"/>
+                <polyline id="ptEdge" fill="none" stroke="#1F2A56" stroke-opacity=".25" stroke-width="10"/>
+              </g>
+              <rect id="flash" width="920" height="575" fill="#fff" opacity="0"/>
+              <g transform="translate(14 14)">
+                <rect width="226" height="34" rx="17" fill="#1F2A56" opacity=".78"/>
+                <text id="mapNote" x="113" y="23" font-size="17" font-weight="700" fill="#fff" text-anchor="middle">示意圖・非實際比例</text>
+              </g>
+              <g id="compass" transform="translate(872 50)">
+                <circle r="26" fill="#fff" opacity=".85"/><path d="M0-20L7 4H-7Z" fill="#FF6F61"/><path d="M0 20L7-4H-7Z" fill="#1F2A56"/>
+                <text y="-30" font-size="16" font-weight="900" fill="#fff" text-anchor="middle" stroke="#1F2A56" stroke-width="3" paint-order="stroke">N</text>
+              </g>
+            </g>
+            <text id="polYear" class="num" x="0" y="628" font-size="44" font-weight="800" fill="#1F2A56">1948</text>
+            <text id="polRoc" x="118" y="626" font-size="26" font-weight="900" fill="#FF6F61">民國37年</text>
+            <text id="polSrc" x="920" y="626" font-size="22" font-weight="700" fill="#6b7299" text-anchor="end">老地圖・早期航照（示意）</text>
+            <rect x="-40" y="-34" width="150" height="36" fill="#FFC93C" opacity=".82" transform="rotate(-14 35 -16)"/>
+            <rect x="820" y="-34" width="150" height="36" fill="#4FD1A5" opacity=".82" transform="rotate(12 895 -16)"/>
+          </g>
+
+          <!-- right panel -->
+          <g id="panel">
+            <g id="tagG" transform="translate(1140 196)">
+              <rect id="tagBg" width="190" height="44" rx="22" fill="#1F2A56"/>
+              <text id="tagTxt" x="95" y="31" font-size="22" font-weight="900" fill="#FFC93C" text-anchor="middle">CH.01</text>
+            </g>
+            <text id="titleTxt" x="1140" y="300" font-size="58" font-weight="900" fill="#1F2A56">標題</text>
+            <g id="factCard">
+              <g id="factInner">
+                <rect x="-330" y="-120" width="660" height="250" rx="10" fill="#FFE27A"/>
+                <rect x="-60" y="-138" width="120" height="30" fill="#FF6F61" opacity=".75"/>
+                <g id="factLines"></g>
+              </g>
+            </g>
+            <g id="taskCard">
+              <g id="taskInner">
+                <rect x="-330" y="-95" width="660" height="196" rx="10" fill="#BDF2DC"/>
+                <g transform="translate(-292 -46)">
+                  <circle r="16" fill="none" stroke="#1F2A56" stroke-width="6"/><path d="M11 11L24 24" stroke="#1F2A56" stroke-width="7" stroke-linecap="round"/>
+                </g>
+                <text x="-258" y="-36" font-size="30" font-weight="900" fill="#1F2A56">判讀任務</text>
+                <g id="taskLines"></g>
+              </g>
+            </g>
+          </g>
+
+          <!-- caption -->
+          <g id="capG">
+            <rect id="capBg" x="110" y="884" width="1700" height="104" rx="22" fill="#1F2A56" opacity=".9"/>
+            <g id="capText"></g>
+          </g>
+
+          <!-- timeline -->
+          <g id="tl">
+            <line x1="130" y1="1042" x2="1790" y2="1042" stroke="#1F2A56" stroke-opacity=".18" stroke-width="10" stroke-linecap="round"/>
+            <line id="tlFlow" x1="130" y1="1042" x2="1790" y2="1042" stroke="#4FB3E8" stroke-width="4" stroke-dasharray="4 18" stroke-linecap="round"/>
+            <line id="tlFill" x1="130" y1="1042" x2="130" y2="1042" stroke="#FF6F61" stroke-width="10" stroke-linecap="round"/>
+            <g id="tlDots"></g>
+            <g id="plane"><path d="M-18-12L22 0L-18 12L-10 0Z" fill="#1F2A56"/><path d="M-10 0L22 0" stroke="#fff" stroke-width="2"/></g>
+          </g>
+        </g>
+
+        <!-- ===== INTRO ===== -->
+        <g id="intro">
+          <rect width="1920" height="1080" fill="url(#sky)"/>
+          <g id="sun" transform="translate(1710 170)"><g id="sunRays"></g><circle r="70" fill="#FFC93C"/></g>
+          <g id="iclouds"></g>
+          <g id="zoomG">
+            <g id="globe" transform="translate(960 600)">
+              <circle r="346" fill="#ffffff" opacity=".55"/>
+              <circle r="330" fill="url(#ocean)"/>
+              <g clip-path="url(#globeClip)">
+                <path d="M-420-260C-300-300-230-200-260-120C-280-40-200 20-250 120C-300 220-260 300-420 320Z" fill="#9be28a" opacity=".9"/>
+                <path d="M200 260C260 220 330 250 360 330L220 380Z" fill="#9be28a" opacity=".8"/>
+                <path id="twPath" fill="#7cd67a" stroke="#fff" stroke-width="5" stroke-linejoin="round"/>
+                <path d="M-300-200C-150-260 150-260 300-200" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="3"/>
+                <path d="M-330 0H330M-320 120C-120 150 120 150 320 120M-320-120C-120-150 120-150 320-120" fill="none" stroke="#fff" stroke-opacity=".25" stroke-width="2"/>
+              </g>
+              <g id="pin"><g id="pinRings"></g><path d="M0 0C-14-18-20-26-20-36A20 20 0 1 1 20-36C20-26 14-18 0 0Z" fill="#FF6F61" stroke="#fff" stroke-width="4"/><circle cy="-36" r="7" fill="#fff"/></g>
+              <ellipse rx="430" ry="120" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="10 12" transform="rotate(-18)" opacity=".9"/>
+            </g>
+          </g>
+          <g id="sat"><rect x="-16" y="-12" width="32" height="24" rx="4" fill="#fff" stroke="#1F2A56" stroke-width="4"/>
+            <rect x="-62" y="-9" width="38" height="18" fill="#4FB3E8" stroke="#1F2A56" stroke-width="3"/>
+            <rect x="24" y="-9" width="38" height="18" fill="#4FB3E8" stroke="#1F2A56" stroke-width="3"/>
+            <circle cy="18" r="6" fill="#FF6F61"/></g>
+          <g id="ititle">
+            <text id="it1" x="960" y="200" font-size="128" font-weight="900" fill="#1F2A56" text-anchor="middle" stroke="#fff" stroke-width="14" paint-order="stroke">梅岡時光機</text>
+            <text id="it2" x="960" y="268" font-size="40" font-weight="900" fill="#FF6F61" text-anchor="middle" stroke="#fff" stroke-width="8" paint-order="stroke">楊梅高中・空照 × 衛星影像 1948 → 2026</text>
+            <g id="pinLabel"><rect x="-120" y="-30" width="240" height="56" rx="28" fill="#1F2A56"/><text y="9" font-size="28" font-weight="900" fill="#fff" text-anchor="middle">桃園・楊梅</text></g>
+          </g>
+          <text id="hookYear" class="num" x="960" y="560" font-size="220" font-weight="800" fill="#fff" text-anchor="middle" stroke="#1F2A56" stroke-width="12" paint-order="stroke">1948</text>
+        </g>
+
+        <!-- ===== OUTRO ===== -->
+        <g id="outro" opacity="0">
+          <rect width="1920" height="1000" fill="#FFF6E5" opacity=".94"/>
+          <rect width="1920" height="1000" fill="url(#gridPaper)" opacity=".6"/>
+          <g id="confetti"></g>
+          <g id="o1" transform="translate(960 380)"><text font-size="124" font-weight="900" fill="#1F2A56" text-anchor="middle">梅岡一甲子，</text></g>
+          <g id="o2" transform="translate(960 545)"><text font-size="150" font-weight="900" fill="#FF6F61" text-anchor="middle" stroke="#fff" stroke-width="10" paint-order="stroke">青春正好！</text></g>
+          <g id="o3" transform="translate(960 735)">
+            <rect x="-640" y="-90" width="1280" height="190" rx="24" fill="#BDF2DC"/>
+            <text y="-30" font-size="40" font-weight="900" fill="#1F2A56" text-anchor="middle">換你當「時間偵探」</text>
+            <g id="steps"></g>
+          </g>
+          <text x="960" y="960" font-size="22" font-weight="700" fill="#6b7299" text-anchor="middle">畫面中的地圖為依時代特徵繪製之示意圖；校史資料參考楊梅高中校史簡介與教育部統計</text>
+        </g>
+      </svg>
+    </div>
+    <div id="cover"><button id="bigPlay" type="button">▶ 播放（含旁白、音樂與音效）</button>
+      <p>約 3 分鐘・1920×1080・30 fps｜空白鍵 播放／暫停，← → 前後 5 秒<br>旁白使用瀏覽器預設語音；可於下方「影像替換」載入你自己截取的 Google 地球畫面</p></div>
+    <aside id="drawer" aria-label="影像替換">
+      <button class="close" id="drawerClose" aria-label="關閉">✕</button>
+      <h2>影像替換：放入真實影像</h2>
+      <p>影片內建的是依年代特徵繪製的<b>示意圖</b>。你可以為每個年份載入自行截取的影像（例如 Google 地球「歷史圖像」、國土測繪圖資服務雲正射影像、中研院百年歷史地圖舊航照），播放時會出現在拍立得相框中。請在課堂使用時保留圖資來源標示（如「Google、Maxar」等）。</p>
+      <label class="mix">示意 <input id="mix" type="range" min="0" max="1" step="0.05" value="1"> 實景</label>
+      <div id="rows"></div>
+    </aside>
+  </div>
+  <div id="controls">
+    <button id="playBtn" type="button" aria-label="播放">▶</button>
+    <span id="time">00:00 / 03:00</span>
+    <div id="seekWrap"><input id="seek" type="range" min="0" max="180" step="0.0333" value="0" aria-label="播放進度"><div id="ticks"></div></div>
+    <button id="narrBtn" type="button" aria-pressed="true">旁白</button>
+    <button id="capBtn" type="button" aria-pressed="true">字幕</button>
+    <button id="sfxBtn" type="button" aria-pressed="true">音效</button>
+    <label class="vol">音樂 <input id="vol" type="range" min="0" max="1" step="0.05" value="0.8"></label>
+    <button id="imgBtn" type="button">影像替換</button>
+    <button id="fsBtn" type="button">全螢幕</button>
+  </div>
+  <div id="chips"></div>
+</div>
+
+<script>
+"use strict";
+/* =========================================================
+   梅岡時光機 — deterministic render(t), 180 s, 30 fps
+   ========================================================= */
+const FPS = 30, DUR = 180, BAR = 2.5, STEP = BAR / 16;
+const NS = "http://www.w3.org/2000/svg";
+const $ = id => document.getElementById(id);
+const clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, k) => a + (b - a) * k;
+const ease = k => k < .5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+const easeOut = k => 1 - Math.pow(1 - k, 3);
+const spring = u => u <= 0 ? 0 : 1 - Math.exp(-6 * u) * Math.cos(11 * u);
+function el(tag, attrs, parent) {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function rng(seed) { return function () { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function mixHex(a, b, k) {
+  const pa = parseInt(a.slice(1), 16), pb = parseInt(b.slice(1), 16);
+  const r = Math.round(lerp(pa >> 16, pb >> 16, k)), g = Math.round(lerp(pa >> 8 & 255, pb >> 8 & 255, k)), bl = Math.round(lerp(pa & 255, pb & 255, k));
+  return "#" + ((1 << 24) + (r << 16) + (g << 8) + bl).toString(16).slice(1);
+}
+
+/* ---------------- 內容（校史資料 + 判讀教學） ---------------- */
+const CH = [
+  { year: 1948, tag: "CH.01 序章", title: "楊梅初中創校", src: "老地圖・早期航照（示意）",
+    facts: ["民國37年8月 縣立楊梅初中創校", "民國40年 增設高中部", "更名為「縣立楊梅中學」"],
+    task: ["那時還沒有民用衛星", "只能靠航照與老地圖"],
+    focus: [480, 300, 1.0], ann: { x: 515, y: 325, r: 195, text: "未來的梅岡校地" },
+    narr: "故事的起點在民國三十七年，縣立楊梅初中創校，三年後增設高中部。那時還沒有民用衛星，只能靠航照與老地圖。" },
+  { year: 1968, tag: "CH.02", title: "省立楊梅高中成立", src: "早期黑白航照（示意）",
+    facts: ["民國57年8月1日 正式設校", "接收縣立啟明初中校地（現址）", "首任校長 史振鼎"],
+    task: ["黑白航照裡，先找出", "長條形的校舍屋頂"],
+    focus: [465, 250, 1.45], ann: { x: 465, y: 236, r: 140, text: "長條形校舍" },
+    narr: "民國五十七年，省立楊梅高中成立，接收縣立啟明初中的校地，也就是今天的梅岡。黑白航照裡，先找出長條形的校舍。" },
+  { year: 1974, tag: "CH.03", title: "附設職業類科", src: "黑白航照（示意）",
+    facts: ["民國63年8月", "學校附設職業類科", "校園功能更多元"],
+    task: ["前後兩張對照：", "新屋頂、變寬的道路"],
+    focus: [600, 255, 1.5], ann: { x: 640, y: 231, r: 72, text: "新增建物" },
+    narr: "民國六十三年，學校附設職業類科。比較前後兩張圖，新增的屋頂、變寬的道路，就是時間留下的線索。" },
+  { year: 1985, tag: "CH.04", title: "讀懂影像的紋理", src: "航照（示意）",
+    facts: ["整齊方格 → 稻田", "圓而亮的水面 → 埤塘", "粗糙灰塊 → 房舍聚落"],
+    task: ["找找看：", "校園旁的田還剩幾格？"],
+    focus: [560, 370, 1.2], ann: { x: 590, y: 400, r: 112, text: "操場（示意）" },
+    narr: "八零年代的影像，判讀重點是紋理。整齊的方格是稻田，圓圓亮亮的是埤塘，粗糙的灰色方塊則是房舍。" },
+  { year: 2000, tag: "CH.05", title: "更名國立楊梅高中", src: "衛星影像（示意）",
+    facts: ["民國89年2月1日 更名", "配合精省改隸中央", "國立楊梅高級中學"],
+    task: ["1999年 IKONOS 衛星升空", "商用影像達 1 公尺解析度"],
+    focus: [470, 330, 1.25], ann: { x: 400, y: 390, r: 72, text: "屋頂顏色看得出來了" },
+    narr: "民國八十九年精省，學校更名國立楊梅高中。前一年，第一顆一公尺解析度的商用衛星升空，影像越來越清楚。" },
+  { year: 2005, tag: "CH.06", title: "人人都能看衛星", src: "Google 地球歷史圖像（示意）",
+    facts: ["2004年 福衛二號發射", "2005年 Google 地球上線", "衛星影像走進教室"],
+    task: ["拉動時間軸，", "對照同一地點的不同年份"],
+    focus: [590, 400, 1.4], ann: { x: 590, y: 400, r: 116, text: "跑道顏色變了" },
+    narr: "二零零四年福衛二號升空，隔年Google地球上線。從此人人都能在電腦上，拉著時間軸回看自己的學校。" },
+  { year: 2014, tag: "CH.07", title: "桃園升格直轄市", src: "正射影像（示意）",
+    facts: ["2014年12月25日 升格", "楊梅鎮改制為楊梅區", "觀察周邊土地利用變化"],
+    task: ["比一比：", "田地變成房子了嗎？"],
+    focus: [560, 330, 1.0], ann: { x: 800, y: 470, r: 135, text: "新聚落（示意）" },
+    narr: "二零一四年底，桃園升格直轄市，楊梅鎮改為楊梅區。對照影像，看看校園周邊的田野，是不是越來越少？" },
+  { year: 2018, tag: "CH.08", title: "改隸桃園市立", src: "Google 地球歷史圖像（示意）",
+    facts: ["民國107年1月1日", "由國立改隸桃園市", "市立楊梅高級中等學校"],
+    task: ["名字變了，", "校地範圍有沒有變？"],
+    focus: [515, 325, 1.12], ann: { x: 515, y: 325, r: 205, text: "校地範圍" },
+    narr: "民國一百零七年一月一日，學校改隸桃園市，成為市立楊梅高中。名字變了，梅岡的青春沒有變。" },
+  { year: 2021, tag: "CH.09", title: "綜合教學大樓", src: "衛星影像（示意）",
+    facts: ["位於校園中心", "含圖書館與教學空間", "總經費約 2.76 億元"],
+    task: ["工地判讀：", "裸露土色 → 新建築"],
+    focus: [465, 258, 1.6], ann: { x: 465, y: 258, r: 135, text: "新大樓（示意位置）" },
+    narr: "民國一百一十年前後，綜合教學大樓工程進行中。衛星影像裡的工地，會從裸露的土色，慢慢長成新的建築。" },
+  { year: 2026, tag: "CH.10", title: "今天的梅岡", src: "Google 地球（示意）",
+    facts: ["高獅路5號・校地約5.4公頃", "114學年 51 班", "學生約 1,753 人"],
+    task: ["下一張衛星影像裡，", "也會有你的身影"],
+    focus: [515, 325, 1.0], ann: { x: 515, y: 325, r: 215, text: "梅岡 Meigang" },
+    narr: "今天的梅岡，校地約五點四公頃，一千七百多位同學在這裡上課。下一張衛星影像裡，也會有你的身影。" }
+];
+const SEGS = [
+  { k: "intro", t0: 0, t1: 12.5, narr: "從太空往下看，鏡頭一路飛向桃園楊梅。今天，我們用一張張空照與衛星影像，回看梅岡近六十年。" },
+  { k: "howto", t0: 12.5, t1: 25, narr: "先學一招：空照圖從飛機上拍，衛星影像從太空拍。年代越早越黑白、越模糊，判讀要看形狀、紋理和陰影。",
+    card: { tag: "先備知識", title: "怎麼讀空照圖？", facts: ["空照圖：從飛機上拍攝", "衛星影像：從太空軌道拍攝", "年代越早 → 越黑白、越模糊"], task: ["判讀三招：", "形狀・紋理・陰影"] } }
+];
+CH.forEach((c, i) => SEGS.push({ k: "ch", i, t0: 25 + i * 12.5, t1: 37.5 + i * 12.5, narr: c.narr, card: c }));
+SEGS.push({ k: "recap", t0: 150, t1: 167.5, narr: "快轉一次：從黑白航照到彩色衛星影像，近六十年的變化，就藏在一張張影像的差異裡。",
+  card: { tag: "REWIND", title: "近六十年快轉", facts: ["1948 創校 → 1968 省立", "2000 國立 → 2018 市立", "黑白航照 → 彩色衛星"], task: ["影像之間的差異，", "就是時間的足跡"] } });
+SEGS.push({ k: "outro", t0: 167.5, t1: 180, narr: "打開Google地球的歷史圖像，換你來當時間偵探。梅岡一甲子，青春正好！" });
+const YEARS = CH.map(c => c.year);
+const segAt = t => { for (let i = SEGS.length - 1; i >= 0; i--) if (t >= SEGS[i].t0) return i; return 0; };
+const RECAP_T = i => 151.1 + i * 1.15;
+
+/* ---------------- 時間 → 年份 ---------------- */
+function yearAt(t) {
+  if (t < 25) return 1948;
+  if (t < 150) {
+    const i = Math.min(9, Math.floor((t - 25) / 12.5)), t0 = 25 + i * 12.5;
+    const prev = i ? YEARS[i - 1] : 1948;
+    return lerp(prev, YEARS[i], ease(clamp((t - t0 - 0.3) / 1.6)));
+  }
+  if (t < 151.1) return lerp(2026, 1948, ease(clamp((t - 150.15) / 0.85)));
+  if (t < 167.5) {
+    let y = 1948;
+    for (let i = 1; i < 10; i++) { const s = RECAP_T(i - 1); if (t >= s) y = lerp(YEARS[i - 1], YEARS[i], ease(clamp((t - s) / 0.55))); }
+    return y;
+  }
+  return 2026;
+}
+
+/* ---------------- 地圖（示意）建構 ---------------- */
+const MW = 960, MH = 600;
+const mapG = $("map");
+const R = rng(20260);
+const cells = [], bld = [], trees = [], localRoads = [], ponds = [], MAP = {};
+const DOOD = [], ICL = [], PIN = { rings: [] }, CONF = [], STEPS = [], TLD = [];
+const CAMPUS = { x0: 320, y0: 165, x1: 712, y1: 490 };
+(function buildMap() {
+  el("rect", { x: -200, y: -200, width: MW + 400, height: MH + 400, fill: "#a9c98a" }, mapG);
+  const pondDefs = [[150, 150, 62, 40, 0], [830, 120, 52, 34, 0], [175, 385, 56, 38, 1998], [885, 300, 40, 28, 0], [90, 560, 48, 30, 0]];
+  const seeds = [[980, 620, 1], [1000, 360, 1.15], [-20, 620, 1.3]];
+  for (let r = -2; r < 17; r++) for (let c = -3; c < 27; c++) {
+    const x = c * 40, y = r * 40, cx = x + 20, cy = y + 20;
+    if (cx > CAMPUS.x0 - 8 && cx < CAMPUS.x1 + 8 && cy > CAMPUS.y0 - 8 && cy < CAMPUS.y1 + 8) continue;
+    if (pondDefs.some(p => p[4] === 0 && Math.hypot((cx - p[0]) / (p[2] + 22), (cy - p[1]) / (p[3] + 22)) < 1)) continue;
+    let d = 1e9; for (const s of seeds) d = Math.min(d, Math.hypot(cx - s[0], cy - s[1]) * s[2]);
+    const yr = 1962 + d * 0.085 + (R() - .5) * 16;
+    const g = el("g", {}, mapG);
+    const pr = R();
+    el("rect", { x: x + 1.5, y: y + 1.5, width: 37, height: 37, fill: pr < .45 ? "url(#paddyA)" : pr < .85 ? "url(#paddyB)" : "url(#paddyC)", stroke: "#6f9a4f", "stroke-width": 1 }, g);
+    const hg = el("g", { opacity: 0 }, g);
+    el("rect", { x, y, width: 40, height: 40, fill: "#cfc8b8" }, hg);
+    const n = 2 + Math.floor(R() * 3), modern = yr > 1998;
+    for (let k = 0; k < n; k++) {
+      const w = 10 + R() * 14, h = 8 + R() * 10, hx = x + 2 + R() * (36 - w), hy = y + 2 + R() * (36 - h);
+      const col = modern ? ["#7fa9c9", "#d98c5f", "#e9e4d8", "#9db7a3"][Math.floor(R() * 4)] : ["#a8a196", "#b9b3a7", "#8f8a80"][Math.floor(R() * 3)];
+      el("rect", { x: hx + 3, y: hy + 3, width: w, height: h, fill: "#000", opacity: .28 }, hg);
+      el("rect", { x: hx, y: hy, width: w, height: h, fill: col, stroke: "#6d665c", "stroke-width": .8 }, hg);
+    }
+    cells.push({ yr: yr > 2030 ? 9999 : yr, hg, a: -1 });
+  }
+  pondDefs.forEach(p => {
+    const e = el("ellipse", { cx: p[0], cy: p[1], rx: p[2], ry: p[3], fill: "#5aa6c9", stroke: "#3d7f9f", "stroke-width": 3 }, mapG);
+    el("ellipse", { cx: p[0] - p[2] * .3, cy: p[1] - p[3] * .35, rx: p[2] * .35, ry: p[3] * .2, fill: "#bfe8f7", opacity: .7 }, mapG);
+    ponds.push({ e, fill: p[4] });
+  });
+  // campus
+  const cg = el("g", {}, mapG);
+  const campusGround = el("polygon", { points: "330,172 702,170 710,482 322,486", fill: "#cfd9a6", stroke: "#a9b57d", "stroke-width": 3, opacity: 0 }, cg);
+  const outline = el("polygon", { points: "330,172 702,170 710,482 322,486", fill: "none", stroke: "#FF6F61", "stroke-width": 4, "stroke-dasharray": "14 10", "vector-effect": "non-scaling-stroke" }, cg);
+  const track = el("g", { opacity: 0 }, cg);
+  const trackRing = el("ellipse", { cx: 590, cy: 405, rx: 96, ry: 56, fill: "#8fc46a", stroke: "#c9a36b", "stroke-width": 16 }, track);
+  const lane = el("ellipse", { cx: 590, cy: 405, rx: 96, ry: 56, fill: "none", stroke: "#fff", "stroke-width": 1.2, "stroke-dasharray": "6 6", opacity: 0 }, track);
+  const BLD = [
+    { x: 350, y: 190, w: 230, h: 32, y0: 1968, c: "#ddd6c6" },
+    { x: 350, y: 240, w: 230, h: 32, y0: 1968, y1: 2019, c: "#ddd6c6" },
+    { x: 600, y: 190, w: 80, h: 82, y0: 1974, c: "#cdc4ae" },
+    { x: 350, y: 290, w: 110, h: 38, y0: 1980, c: "#e4dac2" },
+    { x: 350, y: 352, w: 100, h: 80, y0: 1992, c: "#9fc7d8" },
+    { x: 474, y: 290, w: 106, h: 38, y0: 2002, c: "#f0c987" },
+    { x: 344, y: 236, w: 242, h: 44, y0: 2021, c: "#8fd3c8", site: 2019 }
+  ];
+  BLD.forEach(b => {
+    const g = el("g", { opacity: 0 }, cg);
+    el("rect", { x: b.x + 6, y: b.y + 7, width: b.w, height: b.h, fill: "#000", opacity: .3 }, g);
+    el("rect", { x: b.x, y: b.y, width: b.w, height: b.h, fill: b.c, stroke: "#5f5a52", "stroke-width": 1.5 }, g);
+    el("line", { x1: b.x + 4, y1: b.y + b.h / 2, x2: b.x + b.w - 4, y2: b.y + b.h / 2, stroke: "#fff", "stroke-opacity": .55, "stroke-width": 2 }, g);
+    let site = null;
+    if (b.site) {
+      site = el("g", { opacity: 0 }, cg);
+      el("rect", { x: b.x - 6, y: b.y - 6, width: b.w + 12, height: b.h + 12, fill: "#c79a6b", stroke: "#FFC93C", "stroke-width": 3, "stroke-dasharray": "8 6" }, site);
+      for (let k = 0; k < 6; k++) el("rect", { x: b.x + 10 + k * 38, y: b.y + 8 + (k % 2) * 14, width: 18, height: 10, fill: "#9a7650" }, site);
+      el("path", { d: `M${b.x + 40} ${b.y + 40}V${b.y - 30}H${b.x + 150}`, stroke: "#FFC93C", "stroke-width": 6, fill: "none" }, site);
+    }
+    bld.push({ ...b, g, site, cx: b.x + b.w / 2, cy: b.y + b.h / 2 });
+  });
+  const campusLabel = el("text", { x: 340, y: 160, "font-size": 22, "font-weight": 900, fill: "#fff", stroke: "#1F2A56", "stroke-width": 5, "paint-order": "stroke" }, cg);
+  campusLabel.textContent = "梅岡校區";
+  // trees
+  const TR = rng(7);
+  for (let k = 0; k < 46; k++) {
+    let x, y; const side = k % 4, u = TR();
+    if (side === 0) { x = 334 + u * 366; y = 178; } else if (side === 1) { x = 334 + u * 366; y = 476; }
+    else if (side === 2) { x = 334; y = 180 + u * 296; } else { x = 700; y = 180 + u * 296; }
+    if (side === 1 && x > 480 && x < 700) { y = 470; }
+    const t = el("circle", { cx: x, cy: y, r: 0, fill: TR() < .5 ? "#3f8f4a" : "#57a85a", stroke: "#2f6e38", "stroke-width": 1 }, cg);
+    trees.push({ e: t, y0: 1968 + TR() * 12, max: 7 + TR() * 6 });
+  }
+  // roads
+  const mainRoad = el("path", { d: "M-40 548C200 522 420 506 720 500S900 470 1000 420", fill: "none", stroke: "#cdb48a", "stroke-width": 8, "stroke-linecap": "round" }, mapG);
+  const mainLine = el("path", { d: "M-40 548C200 522 420 506 720 500S900 470 1000 420", fill: "none", stroke: "#fff", "stroke-width": 1.5, "stroke-dasharray": "12 12", opacity: 0 }, mapG);
+  const sideRoad = el("path", { d: "M770-40C752 200 776 350 748 640", fill: "none", stroke: "#cdb48a", "stroke-width": 6 }, mapG);
+  const LR = [["M770 260H1000", 1978], ["M760 360C860 350 900 380 1000 370", 1986], ["M780 560L1000 540", 1990], ["M0 470C100 470 160 455 260 470", 1995],
+    ["M860 260V640", 2003], ["M0 600L320 560", 2008], ["M130 470V640", 2012], ["M900 0V260", 2016]];
+  LR.forEach(([d, y]) => localRoads.push({ e: el("path", { d, fill: "none", stroke: "#9b968c", "stroke-width": 5, opacity: 0 }, mapG), y }));
+  const roadLabel = el("text", { x: 120, y: 530, "font-size": 20, "font-weight": 900, fill: "#fff", stroke: "#1F2A56", "stroke-width": 5, "paint-order": "stroke", transform: "rotate(-4 120 530)" }, mapG);
+  roadLabel.textContent = "高獅路";
+  const townLabel = el("text", { x: 905, y: 590, "font-size": 18, "font-weight": 900, fill: "#fff", stroke: "#1F2A56", "stroke-width": 5, "paint-order": "stroke", "text-anchor": "end" }, mapG);
+  townLabel.textContent = "往楊梅市區 →";
+  // clouds
+  const clouds = [];
+  for (let k = 0; k < 3; k++) {
+    const g = el("g", { opacity: .38 }, mapG);
+    [[0, 0, 70, 30], [50, -14, 50, 30], [-50, 6, 46, 24]].forEach(([dx, dy, rx, ry]) => el("ellipse", { cx: dx, cy: dy, rx, ry, fill: "#fff" }, g));
+    clouds.push({ g, base: k * 420 + 80, y: 90 + k * 170, sp: 10 + k * 5 });
+  }
+  Object.assign(MAP, { campusGround, outline, campusLabel, track, trackRing, lane, mainRoad, mainLine, sideRoad, clouds });
+  // grain
+  const GR = rng(99), gd = $("grainDots");
+  for (let k = 0; k < 260; k++) el("rect", { x: GR() * 120, y: GR() * 120, width: 1.6, height: 1.6, fill: GR() < .5 ? "#000" : "#fff", opacity: .5 }, gd);
+})();
+
+function updateMap(Y, t) {
+  for (const c of cells) {
+    const a = c.yr > 3000 ? 0 : clamp((Y - c.yr) / 1.5);
+    if (a !== c.a) { c.a = a; c.hg.setAttribute("opacity", a.toFixed(3)); }
+  }
+  for (const p of ponds) if (p.fill) p.e.setAttribute("opacity", (1 - clamp((Y - p.fill) / 1.5)).toFixed(3));
+  const cg = clamp((Y - 1966) / 2);
+  MAP.campusGround.setAttribute("opacity", cg);
+  MAP.campusLabel.setAttribute("opacity", cg);
+  MAP.outline.setAttribute("opacity", Y < 1968 ? 1 : .55);
+  for (const b of bld) {
+    const a = clamp((Y - b.y0 + 1.2) / 1.2), r = b.y1 ? clamp((Y - b.y1) / 0.6) : 0, v = a * (1 - r);
+    const s = 0.55 + 0.45 * easeOut(a);
+    b.g.setAttribute("opacity", v.toFixed(3));
+    b.g.setAttribute("transform", `translate(${b.cx} ${b.cy}) scale(${s.toFixed(3)}) translate(${-b.cx} ${-b.cy})`);
+    if (b.site) b.site.setAttribute("opacity", (clamp((Y - b.site) / 0.6) * (1 - clamp((Y - b.y0 + 0.4) / 0.4))).toFixed(3));
+  }
+  MAP.track.setAttribute("opacity", clamp((Y - 1983.8) / 1.2));
+  const pu = clamp((Y - 2003) / 1);
+  MAP.trackRing.setAttribute("stroke", mixHex("#c9a36b", "#d9534f", pu));
+  MAP.lane.setAttribute("opacity", pu);
+  for (const tr of trees) tr.e.setAttribute("r", Y < tr.y0 ? 0 : Math.min(tr.max, 2 + (Y - tr.y0) * 0.32).toFixed(2));
+  const rw = clamp((Y - 1978) / 12);
+  MAP.mainRoad.setAttribute("stroke-width", (8 + 10 * rw).toFixed(2));
+  MAP.mainRoad.setAttribute("stroke", mixHex("#cdb48a", "#6f6f78", rw));
+  MAP.mainLine.setAttribute("opacity", rw);
+  MAP.sideRoad.setAttribute("stroke", mixHex("#cdb48a", "#77777f", rw));
+  for (const r of localRoads) r.e.setAttribute("opacity", clamp((Y - r.y) / 1.5));
+  for (const c of MAP.clouds) c.g.setAttribute("transform", `translate(${(((c.base + t * c.sp) % 1260) - 150).toFixed(1)} ${c.y})`);
+  // era look
+  const sat = clamp((Y - 1990) / 12);
+  $("eraSat").setAttribute("values", sat.toFixed(3));
+  $("eraBlur").setAttribute("stdDeviation", (1.4 * (1 - clamp((Y - 1948) / 55))).toFixed(2));
+  $("sepia").setAttribute("opacity", (0.38 * (1 - sat)).toFixed(3));
+  $("grainRect").setAttribute("opacity", (0.5 * (1 - clamp((Y - 1996) / 12))).toFixed(3));
+  $("vignRect").setAttribute("opacity", (0.8 * (1 - clamp((Y - 1990) / 15))).toFixed(3));
+}
+
+/* ---------------- 鏡頭 ---------------- */
+function focusOf(segIdx) {
+  const s = SEGS[segIdx];
+  if (s.k === "ch") return CH[s.i].focus;
+  if (s.k === "outro") return [480, 300, 1.04];
+  return [480, 300, 1.0];
+}
+function camAt(t) {
+  const i = segAt(t), s = SEGS[i];
+  const cur = focusOf(i), prev = i ? focusOf(i - 1) : cur;
+  const k = ease(clamp((t - s.t0 - 0.2) / 2.2));
+  let fx = lerp(prev[0], cur[0], k), fy = lerp(prev[1], cur[1], k), z = lerp(prev[2], cur[2], k);
+  z *= 1 + 0.045 * clamp((t - s.t0) / (s.t1 - s.t0));
+  const hw = MW / 2 / z, hh = MH / 2 / z;
+  fx = clamp(fx, hw, MW - hw); fy = clamp(fy, hh, MH - hh);
+  return [fx, fy, z];
+}
+
+/* ---------------- 靜態裝飾 ---------------- */
+(function decor() {
+  const lp = $("logoPetals");
+  for (let k = 0; k < 5; k++) { const a = k * 72 * Math.PI / 180 - Math.PI / 2; el("circle", { cx: (Math.cos(a) * 20).toFixed(2), cy: (Math.sin(a) * 20).toFixed(2), r: 15 }, lp); }
+  const sr = $("sunRays");
+  for (let k = 0; k < 12; k++) el("rect", { x: -5, y: -118, width: 10, height: 30, rx: 5, fill: "#FFC93C", transform: `rotate(${k * 30})` }, sr);
+  const dg = $("doodles"), DR = rng(3), cols = ["#FF6F61", "#FFC93C", "#4FD1A5", "#4FB3E8"];
+  for (let k = 0; k < 16; k++) {
+    const g = el("g", { opacity: .55 }, dg), c = cols[k % 4], kind = k % 4;
+    if (kind === 0) el("path", { d: "M0-14L4-4L14-4L6 3L9 13L0 7L-9 13L-6 3L-14-4L-4-4Z", fill: c }, g);
+    else if (kind === 1) el("circle", { r: 9, fill: "none", stroke: c, "stroke-width": 4 }, g);
+    else if (kind === 2) el("path", { d: "M-12 0Q-6-10 0 0T12 0", fill: "none", stroke: c, "stroke-width": 4, "stroke-linecap": "round" }, g);
+    else el("path", { d: "M0-11L10 8H-10Z", fill: "none", stroke: c, "stroke-width": 4, "stroke-linejoin": "round" }, g);
+    DOOD.push({ g, x: DR() * 1920, y: DR() * 1080, sp: 8 + DR() * 14, rot: DR() * 360, rs: (DR() - .5) * 40 });
+  }
+  const ic = $("iclouds"), CR = rng(11);
+  for (let k = 0; k < 6; k++) {
+    const g = el("g", { opacity: .9 }, ic);
+    [[0, 0, 90, 38], [70, -20, 64, 40], [-70, 8, 60, 30]].forEach(([dx, dy, rx, ry]) => el("ellipse", { cx: dx, cy: dy, rx, ry, fill: "#fff" }, g));
+    ICL.push({ g, x: CR() * 2100, y: 120 + CR() * 820, sp: 14 + CR() * 26, s: .6 + CR() * .7 });
+  }
+  // Taiwan outline (approx.)
+  const TW = [[121.51, 25.30], [121.93, 25.13], [122.0, 24.95], [121.83, 24.6], [121.62, 24.05], [121.48, 23.5], [121.37, 23.1], [121.15, 22.75], [120.9, 22.3], [120.85, 21.92], [120.73, 21.97], [120.63, 22.35], [120.3, 22.6], [120.12, 22.98], [120.1, 23.45], [120.2, 23.85], [120.45, 24.3], [120.75, 24.7], [121.05, 25.0], [121.35, 25.2]];
+  const k = 118, ox = 121, oy = 23.65, toXY = ([lo, la]) => [(lo - ox) * k, -(la - oy) * k];
+  $("twPath").setAttribute("d", "M" + TW.map(p => toXY(p).map(v => v.toFixed(1)).join(" ")).join("L") + "Z");
+  PIN.xy = toXY([121.15, 24.91]);
+  const pr = $("pinRings");
+  for (let i = 0; i < 3; i++) PIN.rings.push(el("circle", { r: 0, fill: "none", stroke: "#FF6F61", "stroke-width": 4 }, pr));
+  // outro confetti + steps
+  const cf = $("confetti"), FR = rng(5);
+  for (let i = 0; i < 90; i++) CONF.push({ e: el("rect", { width: 14, height: 8, rx: 2, fill: cols[i % 4] }, cf), x: FR() * 1920, sp: 120 + FR() * 160, ph: FR() * 1000, rot: FR() * 360, rs: 90 + FR() * 260, sway: 20 + FR() * 40 });
+  const st = $("steps");
+  ["① 開啟 Google 地球", "② 點選「歷史圖像」", "③ 拖曳時間軸比一比"].forEach((s, i) => {
+    const g = el("g", { transform: `translate(${-410 + i * 410} 45)` }, st);
+    el("rect", { x: -190, y: -34, width: 380, height: 64, rx: 32, fill: "#fff" }, g);
+    const tx = el("text", { y: 10, "font-size": 30, "font-weight": 900, fill: "#1F2A56", "text-anchor": "middle" }, g); tx.textContent = s;
+    STEPS.push(g);
+  });
+  // timeline dots
+  const td = $("tlDots");
+  YEARS.forEach((y, i) => {
+    const x = tlX(y), g = el("g", { transform: `translate(${x} 1042)` }, td);
+    const c = el("circle", { r: 9, fill: "#fff", stroke: "#1F2A56", "stroke-width": 4 }, g);
+    const tx = el("text", { y: -22, "font-size": 21, "font-weight": 800, fill: "#1F2A56", "text-anchor": "middle", class: "num" }, g); tx.textContent = y;
+    TLD.push({ g, c, x, y });
+  });
+})();
+function tlX(y) { return 130 + (y - 1948) / 78 * 1660; }
+
+/* ---------------- 字幕 ---------------- */
+function splitCap(s) {
+  if (s.length <= 30) return [s];
+  const mid = s.length / 2; let best = -1, bd = 1e9;
+  for (let i = 8; i < s.length - 6; i++) if ("，。：；！？、".includes(s[i]) && Math.abs(i + 1 - mid) < bd) { bd = Math.abs(i + 1 - mid); best = i + 1; }
+  if (best < 0) best = Math.ceil(mid);
+  return [s.slice(0, best), s.slice(best)];
+}
+let capSeg = -1, capSpans = [];
+function buildCap(i) {
+  const g = $("capText"); g.textContent = ""; capSpans = [];
+  const lines = splitCap(SEGS[i].narr);
+  const fs = 38, lh = 46, top = 936 - (lines.length - 1) * lh / 2;
+  $("capBg").setAttribute("y", lines.length > 1 ? 884 : 904);
+  $("capBg").setAttribute("height", lines.length > 1 ? 104 : 64);
+  lines.forEach((ln, li) => {
+    const tx = el("text", { x: 960, y: (top + li * lh + 13).toFixed(1), "font-size": fs, "font-weight": 700, "text-anchor": "middle" }, g);
+    for (const ch of ln) { const sp = el("tspan", { fill: "#8f97c4" }, tx); sp.textContent = ch; capSpans.push(sp); }
+  });
+}
+function updateCap(t) {
+  const i = segAt(t), s = SEGS[i];
+  if (i !== capSeg) { capSeg = i; buildCap(i); }
+  const est = s.narr.length / 5.4, p = clamp((t - s.t0 - 0.25) / est) * capSpans.length;
+  capSpans.forEach((sp, k) => sp.setAttribute("fill", k < p ? "#ffffff" : "#8f97c4"));
+  const a = clamp((t - s.t0) / 0.25) * clamp((s.t1 - t) / 0.2 + 0.0001);
+  $("capG").setAttribute("opacity", (capOn ? a : 0).toFixed(3));
+}
+
+/* ---------------- 卡片 ---------------- */
+let cardKey = null;
+function fillCard(card) {
+  $("tagTxt").textContent = card.tag;
+  const tw = Math.max(150, card.tag.length * 24 + 50);
+  $("tagBg").setAttribute("width", tw); $("tagTxt").setAttribute("x", tw / 2);
+  $("titleTxt").textContent = card.title;
+  const fl = $("factLines"); fl.textContent = "";
+  card.facts.forEach((f, i) => {
+    el("circle", { cx: -280, cy: -48 + i * 70, r: 9, fill: "#FF6F61" }, fl);
+    const tx = el("text", { x: -256, y: -36 + i * 70, "font-size": 35, "font-weight": 800, fill: "#1F2A56" }, fl); tx.textContent = f;
+  });
+  const tl = $("taskLines"); tl.textContent = "";
+  card.task.forEach((f, i) => { const tx = el("text", { x: -292, y: 18 + i * 50, "font-size": 33, "font-weight": 700, fill: "#1F2A56" }, tl); tx.textContent = f; });
+}
+function cardAt(t) {
+  const i = segAt(t), s = SEGS[i];
+  if (s.card) return { s, card: s.card, i };
+  if (s.k === "outro") return { s, card: SEGS[i - 1].card, i: i - 1, hold: true };
+  return null;
+}
+function updateCards(t) {
+  const c = cardAt(t);
+  const panel = $("panel");
+  if (!c) { panel.setAttribute("opacity", 0); return; }
+  panel.setAttribute("opacity", 1);
+  const u = c.hold ? 9 : t - c.s.t0;
+  let showCard = c.card, key = c.i;
+  if (u < 0.28 && c.i > 0 && SEGS[c.i - 1].card) { showCard = SEGS[c.i - 1].card; key = c.i - 1; }
+  if (key !== cardKey) { cardKey = key; fillCard(showCard); }
+  const out = u < 0.28 ? 1 - u / 0.28 : 0;
+  const sIn = u < 0.28 ? (SEGS[c.i - 1] && SEGS[c.i - 1].card ? out : 0) : spring((u - 0.28) * 1.1);
+  const sIn2 = u < 0.28 ? sIn : spring((u - 0.45) * 1.1);
+  const tIn = u < 0.28 ? sIn : spring((u - 0.15) * 1.2);
+  $("factCard").setAttribute("transform", `translate(1480 470) rotate(${(-1.6 + (1 - sIn) * 8).toFixed(2)}) scale(${Math.max(0, sIn).toFixed(3)})`);
+  $("taskCard").setAttribute("transform", `translate(1490 760) rotate(${(1.3 - (1 - sIn2) * 8).toFixed(2)}) scale(${Math.max(0, sIn2).toFixed(3)})`);
+  $("titleTxt").setAttribute("opacity", clamp(tIn).toFixed(3));
+  $("titleTxt").setAttribute("transform", `translate(${((1 - clamp(tIn)) * 60).toFixed(1)} 0)`);
+  $("tagG").setAttribute("transform", `translate(1140 ${(196 - (1 - clamp(tIn)) * 20).toFixed(1)})`);
+}
+
+/* ---------------- 註記 ---------------- */
+const annG = $("annLayer");
+const ANN = { g: el("g", {}, annG) };
+ANN.c = el("circle", { r: 10, fill: "none", stroke: "#FF6F61", "stroke-width": 5, "stroke-dasharray": "16 10" }, ANN.g);
+ANN.lg = el("g", {}, ANN.g);
+ANN.bg = el("rect", { height: 42, rx: 21, fill: "#FF6F61" }, ANN.lg);
+ANN.tx = el("text", { y: 29, "font-size": 24, "font-weight": 900, fill: "#fff", "text-anchor": "middle" }, ANN.lg);
+let annKey = -1;
+function updateAnn(t, cam) {
+  const i = segAt(t), s = SEGS[i];
+  if (s.k !== "ch") { ANN.g.setAttribute("opacity", 0); return; }
+  const a = CH[s.i].ann, u = t - s.t0;
+  const vis = spring((u - 1.9) * 1.2) * clamp((s.t1 - t - 0.15) / 0.3);
+  if (vis <= 0.001) { ANN.g.setAttribute("opacity", 0); return; }
+  if (annKey !== s.i) { annKey = s.i; ANN.tx.textContent = a.text; const w = a.text.length * 25 + 40; ANN.bg.setAttribute("x", -w / 2); ANN.bg.setAttribute("width", w); }
+  const [fx, fy, z] = cam, sc = 920 / MW;
+  const px = (a.x - fx) * z * sc + 460, py = (a.y - fy) * z * sc + 287.5, r = a.r * z * sc;
+  ANN.g.setAttribute("opacity", clamp(vis).toFixed(3));
+  ANN.c.setAttribute("cx", px.toFixed(1)); ANN.c.setAttribute("cy", py.toFixed(1));
+  ANN.c.setAttribute("r", Math.max(1, r * (0.6 + 0.4 * vis)).toFixed(1));
+  ANN.c.setAttribute("stroke-dashoffset", (-t * 30).toFixed(1));
+  let ly = py - r - 52; if (ly < 54) ly = py + r + 10;
+  ANN.lg.setAttribute("transform", `translate(${clamp(px, 140, 780).toFixed(1)} ${clamp(ly, 54, 525).toFixed(1)}) scale(${clamp(vis, 0, 1.2).toFixed(3)})`);
+}
+
+/* ---------------- 主渲染 ---------------- */
+let realImgs = {}, realMix = 1, capOn = true;
+function render(t) {
+  t = Math.round(clamp(t, 0, DUR) * FPS) / FPS;
+  const Y = yearAt(t), Yi = Math.floor(Y + 1e-6);
+  // intro
+  const introA = 1 - clamp((t - 9.7) / 0.9);
+  $("intro").setAttribute("opacity", introA.toFixed(3));
+  $("intro").style.display = introA <= 0 ? "none" : "";
+  if (introA > 0) renderIntro(t);
+  // main
+  const mainA = clamp((t - 10) / 1.2);
+  $("main").setAttribute("opacity", mainA.toFixed(3));
+  // doodles
+  for (const d of DOOD) {
+    const y = ((d.y - t * d.sp) % 1180 + 1180) % 1180 - 50;
+    d.g.setAttribute("transform", `translate(${(d.x + Math.sin(t * .5 + d.x) * 14).toFixed(1)} ${y.toFixed(1)}) rotate(${(d.rot + t * d.rs).toFixed(1)})`);
+  }
+  // header year
+  const roc = Yi - 1911;
+  $("yearBig").textContent = Yi;
+  $("rocTxt").textContent = `民國 ${roc} 年`;
+  const yb = 1 + 0.08 * Math.max(0, Math.sin(Math.PI * (Y - Math.floor(Y))));
+  $("yearBig").setAttribute("transform", `translate(1830 128) scale(${yb.toFixed(3)}) translate(-1830 -128)`);
+  // polaroid
+  const s = SEGS[segAt(t)];
+  let u = 99;
+  if (s.k === "ch") u = t - s.t0;
+  if (s.k === "recap") { u = t - 150; for (let i = 0; i < 9; i++) if (t >= RECAP_T(i)) u = t - RECAP_T(i); }
+  const drop = spring((t - 10.4) * 1.1);
+  const wob = u < 3 ? 3.2 * Math.exp(-3.5 * u) * Math.sin(9 * u) : 0;
+  $("polaroid").setAttribute("transform", `translate(90 ${(176 - (1 - drop) * 140).toFixed(1)}) rotate(${(-1.2 + wob).toFixed(2)} 460 330)`);
+  const cam = camAt(t), sc = 920 / MW;
+  $("cam").setAttribute("transform", `translate(460 287.5) scale(${(cam[2] * sc).toFixed(4)}) translate(${(-cam[0]).toFixed(2)} ${(-cam[1]).toFixed(2)})`);
+  updateMap(Y, t);
+  updateAnn(t, cam);
+  // page turn + flash + scan
+  const pt = clamp(u / 0.45);
+  if (u < 0.45) {
+    const x = lerp(940, -400, ease(pt));
+    $("pageTurn").setAttribute("opacity", 1);
+    $("ptPoly").setAttribute("points", `${x + 160},0 ${x + 400},0 ${x + 240},575 ${x},575`);
+    $("ptEdge").setAttribute("points", `${x + 400},0 ${x + 240},575`);
+  } else $("pageTurn").setAttribute("opacity", 0);
+  $("flash").setAttribute("opacity", (u >= .48 && u < .8 ? 0.85 * (1 - (u - .48) / .32) : 0).toFixed(3));
+  const sk = clamp((u - 0.5) / 0.9);
+  $("scan").setAttribute("opacity", u > .5 && u < 1.45 ? 1 : 0);
+  $("scan").setAttribute("y", (lerp(-80, 575, sk)).toFixed(1));
+  // polaroid caption
+  const ci = Math.max(0, YEARS.reduce((acc, y, i) => Y >= y - 0.5 ? i : acc, 0));
+  $("polYear").textContent = Yi;
+  $("polRoc").textContent = `民國${roc}年`;
+  $("polRoc").setAttribute("x", 118);
+  const hasReal = realImgs[ci] && realMix > 0;
+  $("polSrc").textContent = hasReal ? "使用者載入影像・請標示圖資來源" : (t < 25 ? "老地圖・早期航照（示意）" : CH[ci].src);
+  $("realImg").setAttribute("opacity", hasReal ? realMix : 0);
+  if (hasReal && $("realImg").getAttribute("href") !== realImgs[ci]) $("realImg").setAttribute("href", realImgs[ci]);
+  $("mapNote").textContent = hasReal ? "實際影像" : "示意圖・非實際比例";
+  updateCards(t);
+  updateCap(t);
+  // timeline
+  const px = tlX(Y);
+  $("tlFill").setAttribute("x2", px.toFixed(1));
+  $("tlFlow").setAttribute("stroke-dashoffset", (-t * 40).toFixed(1));
+  $("plane").setAttribute("transform", `translate(${px.toFixed(1)} ${(1042 + Math.sin(t * 4) * 3).toFixed(1)})`);
+  for (const d of TLD) {
+    const on = Y >= d.y - 0.01, pop = on ? 1 + 0.5 * Math.exp(-4 * Math.max(0, Y - d.y)) : 1;
+    d.c.setAttribute("fill", on ? "#FFC93C" : "#fff");
+    d.g.setAttribute("transform", `translate(${d.x} 1042) scale(${pop.toFixed(3)})`);
+  }
+  renderOutro(t);
+}
+
+function renderIntro(t) {
+  for (const c of ICL) c.g.setAttribute("transform", `translate(${((c.x + t * c.sp) % 2300 - 200).toFixed(1)} ${c.y}) scale(${c.s})`);
+  $("sunRays").setAttribute("transform", `rotate(${(t * 12).toFixed(1)})`);
+  const gp = spring(t * 1.3);
+  // zoom 7 → 10.5 : pin flies to screen centre
+  const zk = ease(clamp((t - 7) / 3.4)), z = Math.pow(16, zk);
+  const [px, py] = PIN.xy, rot = -8 + (1 - gp) * 30, rr = rot * Math.PI / 180, gs0 = Math.max(0.01, gp);
+  const PX = 960 + (px * Math.cos(rr) - py * Math.sin(rr)) * gs0, PY = 600 + (px * Math.sin(rr) + py * Math.cos(rr)) * gs0;
+  $("zoomG").setAttribute("transform", `translate(${lerp(PX, 960, zk).toFixed(2)} ${lerp(PY, 540, zk).toFixed(2)}) scale(${z.toFixed(4)}) translate(${(-PX).toFixed(2)} ${(-PY).toFixed(2)})`);
+  $("globe").setAttribute("transform", `translate(960 600) rotate(${rot.toFixed(2)}) scale(${gs0.toFixed(3)})`);
+  // pin drops at 4.2
+  const pd = spring((t - 4.2) * 1.4);
+  $("pin").setAttribute("transform", `translate(${px.toFixed(1)} ${(py - (1 - pd) * 160).toFixed(1)}) rotate(8) scale(${clamp(pd, 0, 1.3).toFixed(3)})`);
+  PIN.rings.forEach((r, i) => { const ph = ((t - 4.6 - i * .5) % 1.5 + 1.5) % 1.5; const on = t > 4.6 + i * .5; r.setAttribute("r", on ? (ph * 40).toFixed(1) : 0); r.setAttribute("opacity", on ? (1 - ph / 1.5).toFixed(2) : 0); });
+  // satellite orbit
+  const ang = -2.6 + t * 0.9, ex = Math.cos(ang) * 430, ey = Math.sin(ang) * 120;
+  const ca = Math.cos(-18 * Math.PI / 180), sa = Math.sin(-18 * Math.PI / 180);
+  const fly = easeOut(clamp(t / 1.1));
+  const sx = lerp(-200, 960 + ex * ca - ey * sa, fly), sy = lerp(300, 600 + ex * sa + ey * ca, fly);
+  $("sat").setAttribute("transform", `translate(${sx.toFixed(1)} ${sy.toFixed(1)}) rotate(${(ang * 57.3 + 90).toFixed(1)}) scale(${(1 - zk * .6).toFixed(3)})`);
+  $("sat").setAttribute("opacity", (1 - clamp((t - 8) / 1)).toFixed(3));
+  // hook year 0–1.6
+  const hy = Math.round(lerp(1948, 2026, ease(clamp(t / 1.3))));
+  $("hookYear").textContent = hy;
+  const ha = clamp(t / 0.15) * (1 - clamp((t - 1.5) / 0.4));
+  $("hookYear").setAttribute("opacity", ha.toFixed(3));
+  $("hookYear").setAttribute("transform", `translate(960 480) scale(${(0.8 + 0.2 * spring(t * 2)).toFixed(3)}) translate(-960 -480)`);
+  // titles
+  const a1 = spring((t - 1.5) * 1.3), a2 = spring((t - 2.3) * 1.3), out = 1 - clamp((t - 7.2) / 0.8);
+  $("it1").setAttribute("opacity", (clamp(a1) * out).toFixed(3));
+  $("it1").setAttribute("transform", `translate(960 170) scale(${Math.max(0, a1).toFixed(3)}) translate(-960 -170)`);
+  $("it2").setAttribute("opacity", (clamp(a2) * out).toFixed(3));
+  $("it2").setAttribute("transform", `translate(0 ${((1 - clamp(a2)) * 30).toFixed(1)})`);
+  const pl = spring((t - 5) * 1.3);
+  $("pinLabel").setAttribute("transform", `translate(${(PX + 170).toFixed(1)} ${(PY - 70).toFixed(1)}) scale(${clamp(pl, 0, 1.2).toFixed(3)})`);
+  $("pinLabel").setAttribute("opacity", (1 - clamp((t - 6.8) / .6)).toFixed(3));
+}
+
+function renderOutro(t) {
+  const o = $("outro");
+  if (t < 167.5) { o.setAttribute("opacity", 0); o.style.display = "none"; return; }
+  o.style.display = "";
+  const u = t - 167.5;
+  o.setAttribute("opacity", clamp(u / 0.6).toFixed(3));
+  const a = spring((u - 0.3) * 1.2), b = spring((u - 1.2) * 1.2), c = spring((u - 3.2) * 1.2);
+  $("o1").setAttribute("transform", `translate(960 380) scale(${Math.max(0, a).toFixed(3)})`);
+  $("o2").setAttribute("transform", `translate(960 545) scale(${Math.max(0, b).toFixed(3)}) rotate(${((1 - clamp(b)) * -8).toFixed(2)})`);
+  $("o3").setAttribute("opacity", clamp(c).toFixed(3));
+  $("o3").setAttribute("transform", `translate(960 ${(735 + (1 - clamp(c)) * 40).toFixed(1)})`);
+  STEPS.forEach((g, i) => { const k = spring((u - 4 - i * .45) * 1.3); g.setAttribute("opacity", clamp(k).toFixed(3)); });
+  for (const p of CONF) {
+    const yy = ((u * p.sp + p.ph) % 1100) - 60;
+    p.e.setAttribute("transform", `translate(${(p.x + Math.sin(u * 2 + p.ph) * p.sway).toFixed(1)} ${yy.toFixed(1)}) rotate(${(p.rot + u * p.rs).toFixed(1)})`);
+  }
+}
+
+/* =========================================================
+   聲音：Web Audio 原創合成（BGM + 音效）
+   ========================================================= */
+let AC = null, master, musicVol, duck, sfxVol, revIn, noiseBuf, sess = null, sfxOn = true;
+const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
+const CHORD = { F: [53, 57, 60], C: [48, 52, 55], Dm: [50, 53, 57], Bb: [46, 50, 53] };
+const PROG = ["F", "C", "Dm", "Bb"];
+const OVR = { 66: "C", 67: "F", 68: "Bb", 69: "C", 70: "F", 71: "F" };
+const MEL = [
+  [77, 0, 0, 74, 0, 0, 72, 0, 0, 0, 74, 0, 72, 0, 69, 0],
+  [72, 0, 0, 76, 0, 0, 79, 0, 0, 0, 76, 0, 74, 0, 72, 0],
+  [74, 0, 0, 77, 0, 0, 81, 0, 0, 0, 79, 0, 77, 0, 74, 0],
+  [74, 0, 0, 72, 0, 0, 70, 0, 0, 0, 72, 0, 74, 0, 77, 0]];
+function lvl(x) { return x < 12.5 ? 1 : x < 25 ? 2 : x < 78 ? 3 : x < 150 ? 4 : x < 167.5 ? 5 : 6; }
+
+function initAudio() {
+  if (AC) return;
+  AC = new (window.AudioContext || window.webkitAudioContext)();
+  const comp = AC.createDynamicsCompressor();
+  comp.threshold.value = -16; comp.ratio.value = 3; comp.attack.value = .01; comp.release.value = .2;
+  master = AC.createGain(); master.gain.value = .9;
+  master.connect(comp); comp.connect(AC.destination);
+  duck = AC.createGain(); duck.connect(master);
+  musicVol = AC.createGain(); musicVol.gain.value = +$("vol").value; musicVol.connect(duck);
+  sfxVol = AC.createGain(); sfxVol.gain.value = .9; sfxVol.connect(master);
+  const conv = AC.createConvolver(), len = AC.sampleRate * 2.2, ir = AC.createBuffer(2, len, AC.sampleRate), rr = rng(42);
+  for (let ch = 0; ch < 2; ch++) { const d = ir.getChannelData(ch); for (let i = 0; i < len; i++) d[i] = (rr() * 2 - 1) * Math.pow(1 - i / len, 3); }
+  conv.buffer = ir; revIn = AC.createGain(); revIn.gain.value = .35; revIn.connect(conv); conv.connect(master);
+  noiseBuf = AC.createBuffer(1, AC.sampleRate * 2, AC.sampleRate);
+  const nd = noiseBuf.getChannelData(0), nr = rng(1); for (let i = 0; i < nd.length; i++) nd[i] = nr() * 2 - 1;
+}
+function newSession(t) {
+  stopSession();
+  const m = AC.createGain(), s = AC.createGain(), rv = AC.createGain();
+  m.connect(musicVol); s.connect(sfxVol); rv.connect(revIn);
+  sess = { m, s, rv, ctx0: AC.currentTime + 0.05 - t, from: t };
+}
+function stopSession() {
+  if (!sess) return;
+  const old = sess, now = AC.currentTime; sess = null;
+  [old.m, old.s, old.rv].forEach(g => { g.gain.cancelScheduledValues(now); g.gain.setValueAtTime(g.gain.value, now); g.gain.linearRampToValueAtTime(0, now + .06); });
+  setTimeout(() => [old.m, old.s, old.rv].forEach(g => g.disconnect()), 400);
+}
+function osc(type, f, when, dur, vol, dest, o = {}) {
+  const n = AC.createOscillator(); n.type = type; n.frequency.setValueAtTime(f, when);
+  if (o.f2) n.frequency.exponentialRampToValueAtTime(o.f2, when + (o.ft || dur));
+  if (o.detune) n.detune.value = o.detune;
+  const g = AC.createGain(), a = o.a || .004;
+  g.gain.setValueAtTime(0, when); g.gain.linearRampToValueAtTime(vol, when + a);
+  if (o.sus) { g.gain.setValueAtTime(vol, when + dur - (o.rel || .3)); g.gain.linearRampToValueAtTime(0.0001, when + dur); }
+  else g.gain.exponentialRampToValueAtTime(0.0001, when + dur);
+  let node = n;
+  if (o.lp) { const f1 = AC.createBiquadFilter(); f1.type = "lowpass"; f1.frequency.value = o.lp; n.connect(f1); node = f1; }
+  node.connect(g); g.connect(dest);
+  if (o.rev) { const r = AC.createGain(); r.gain.value = o.rev; g.connect(r); r.connect(sess.rv); }
+  n.start(when); n.stop(when + dur + .05);
+}
+function noise(when, dur, vol, dest, o = {}) {
+  const n = AC.createBufferSource(); n.buffer = noiseBuf;
+  const f = AC.createBiquadFilter(); f.type = o.type || "bandpass"; f.frequency.setValueAtTime(o.f || 2000, when); f.Q.value = o.q || 1;
+  if (o.f2) f.frequency.exponentialRampToValueAtTime(o.f2, when + (o.ft || dur));
+  if (o.f3) f.frequency.exponentialRampToValueAtTime(o.f3, when + dur);
+  const g = AC.createGain(), a = o.a || .003;
+  g.gain.setValueAtTime(0, when); g.gain.linearRampToValueAtTime(vol, when + a); g.gain.exponentialRampToValueAtTime(0.0001, when + dur);
+  n.connect(f); f.connect(g); g.connect(dest);
+  if (o.rev) { const r = AC.createGain(); r.gain.value = o.rev; g.connect(r); r.connect(sess.rv); }
+  n.start(when, (o.off || 0) % 1.5); n.stop(when + dur + .05);
+}
+/* instruments */
+function pad(tones, when, dur, L) {
+  const lp = [0, 900, 1100, 1300, 1500, 1900, 1400][L], vol = [0, .05, .05, .045, .045, .05, .06][L];
+  tones.forEach(m => [-8, 8].forEach(d => osc("sawtooth", mtof(m + 12), when, dur, vol / 2, sess.m, { a: .6, sus: 1, rel: .9, detune: d, lp, rev: .5 })));
+}
+const pluck = (m, w, v) => { osc("triangle", mtof(m), w, .45, v, sess.m, { rev: .25 }); osc("sine", mtof(m + 12), w, .25, v * .3, sess.m); };
+const bell = (m, w, v, d = 1.4) => { osc("sine", mtof(m), w, d, v, sess.m, { rev: .6 }); osc("sine", mtof(m) * 2.76, w, d * .4, v * .25, sess.m); };
+const kick = (w, v) => osc("sine", 120, w, .28, v, sess.m, { f2: 42, ft: .12 });
+const clap = (w, v) => noise(w, .16, v, sess.m, { f: 1700, q: .8, rev: .3 });
+const shaker = (w, v) => noise(w, .05, v, sess.m, { type: "highpass", f: 6500 });
+const tick = (w, v) => osc("square", 2200, w, .03, v, sess.m, { lp: 4000 });
+const bass = (m, w, v) => osc("triangle", mtof(m - 12), w, .36, v, sess.m, { lp: 500 });
+
+function musicStep(k, when) {
+  const x = k * STEP; if (x >= 179.5) return;
+  const bar = Math.floor(k / 16), s = k % 16, L = lvl(x);
+  const cname = OVR[bar] || PROG[bar % 4], tones = CHORD[cname];
+  const arpT = [tones[0] + 12, tones[1] + 12, tones[2] + 12, tones[0] + 24];
+  if (L === 6) {
+    if (bar === 70) {
+      if (s === 0) { pad(tones, when, 4.4, 6); bell(77, when, .1, 3); bass(41 + 12, when, .16); }
+      if (s === 2) bell(81, when, .08, 2.8); if (s === 4) bell(84, when, .07, 2.6); if (s === 6) bell(89, when, .06, 2.4);
+      return;
+    }
+    if (bar > 70) return;
+    if (s === 0) { pad(tones, when, BAR + .3, 6); bass(tones[0], when, .15); }
+    if (bar === 67 && s === 0) { bell(77, when, .1, 2); kick(when, .5); noise(when, 1.6, .18, sess.m, { type: "highpass", f: 5000, rev: .6 }); }
+    if (s % 2 === 0) pluck(arpT[(s / 2) % 4], when, .06);
+    const mn = MEL[bar % 4][s]; if (mn) bell(mn, when, .07);
+    return;
+  }
+  if (s === 0) pad(tones, when, BAR + .4, L);
+  if (L === 1 && (s === 0 || s === 8)) bell(tones[(bar + s / 8) % 3] + 24, when, .06, 2);
+  if (L >= 2) {
+    if (L === 5 || s % 2 === 0) pluck(arpT[(L === 5 ? s : s / 2) % 4], when, L === 5 ? .045 + .03 * ((x - 150) / 17.5) : .055);
+    if (s % 4 === 0) tick(when, L >= 3 ? .018 : .025);
+  }
+  if (L >= 3) {
+    if (s === 0 || s === 8 || (L === 5 && s % 4 === 0)) kick(when, .55);
+    if (s === 4 || s === 12) clap(when, .16);
+    if (L === 3 ? s % 2 === 0 : true) shaker(when, s % 4 === 2 ? .07 : .035);
+    if ([0, 3, 6, 8, 11, 14].includes(s)) bass(tones[0], when, .17);
+  }
+  if (L >= 4) { const mn = MEL[bar % 4][s]; if (mn) bell(mn + (L === 5 ? 12 : 0), when, .06); }
+  if (L === 5 && bar === 66 && s >= 8) noise(when, .08, .04 + (s - 8) * .015, sess.m, { f: 1800 + s * 120, q: .7 });
+}
+/* SFX */
+function pageFlip(w) { noise(w, .22, .5, sess.s, { f: 1100, f2: 4200, ft: .18, q: .9 }); noise(w + .11, .09, .25, sess.s, { type: "highpass", f: 2600 }); noise(w + .02, .3, .12, sess.s, { type: "lowpass", f: 600, off: .3 }); }
+function whoosh(w, d = .8, rev) { noise(w, d, .45, sess.s, { type: "lowpass", f: rev ? 5000 : 300, f2: rev ? 400 : 5000, ft: d * .6, f3: rev ? 300 : 700, q: 2, a: d * .4, rev: .4 }); }
+function shutter(w) { noise(w, .035, .4, sess.s, { type: "highpass", f: 3000 }); noise(w + .07, .05, .35, sess.s, { type: "highpass", f: 2400 }); }
+function pop(w, f = 700) { osc("sine", f, w, .14, .22, sess.s, { f2: f * 2, ft: .07 }); }
+function chime(w) { [77, 81, 84, 89].forEach((m, i) => osc("sine", mtof(m), w + i * .07, 1.2, .1, sess.s, { rev: .7 })); }
+function rewind(w) { osc("sawtooth", 1400, w, .9, .07, sess.s, { f2: 160, ft: .85, lp: 2500 }); whoosh(w, .9, true); }
+function sparkle(w) { [0, 1, 2, 3, 4].forEach(i => osc("sine", 2000 + i * 330, w + i * .05, .25, .05, sess.s, { rev: .5 })); }
+
+const SFX = [];
+(function buildSfx() {
+  SFX.push([0.0, w => whoosh(w, 1.0)], [1.5, chime], [2.3, w => pop(w, 600)], [4.25, w => pop(w, 500)], [5.0, w => pop(w, 800)], [7.0, w => whoosh(w, 1.2)], [9.6, w => whoosh(w, .9)], [10.4, pageFlip], [10.9, shutter]);
+  SEGS.forEach(s => {
+    if (s.k === "howto") SFX.push([s.t0, pageFlip], [s.t0 + .35, w => pop(w, 650)], [s.t0 + .55, w => pop(w, 820)]);
+    if (s.k === "ch") SFX.push([s.t0, pageFlip], [s.t0 + .5, shutter], [s.t0 + .35, w => pop(w, 650)], [s.t0 + .6, w => pop(w, 820)], [s.t0 + 1.95, w => pop(w, 980)]);
+  });
+  SFX.push([150.1, rewind]);
+  for (let i = 0; i < 9; i++) SFX.push([RECAP_T(i), pageFlip]);
+  SFX.push([167.5, sparkle], [167.8, w => pop(w, 600)], [168.7, w => pop(w, 760)], [170.7, w => pop(w, 900)], [171.5, w => pop(w, 700)], [171.95, w => pop(w, 800)], [172.4, w => pop(w, 900)]);
+  SFX.sort((a, b) => a[0] - b[0]);
+})();
+
+function schedule(from, to) {
+  if (!sess) return;
+  const now = AC.currentTime;
+  const k0 = Math.ceil(from / STEP - 1e-6), k1 = Math.ceil(to / STEP - 1e-6);
+  for (let k = k0; k < k1; k++) { const w = sess.ctx0 + k * STEP; if (w >= now - .01) musicStep(k, Math.max(w, now)); }
+  if (sfxOn) for (const [x, fn] of SFX) if (x >= from && x < to) { const w = sess.ctx0 + x; if (w >= now - .02) fn(Math.max(w, now)); }
+}
+
+/* =========================================================
+   旁白：Web Speech（瀏覽器預設語音）
+   ========================================================= */
+let narrOn = true, spokenSeg = -1;
+const SPEECH = "speechSynthesis" in window;
+function speak(text) {
+  if (!SPEECH) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = "zh-TW"; u.rate = 1.15; u.pitch = 1.05; u.volume = 1;
+  u.onstart = () => { if (duck) duck.gain.setTargetAtTime(.45, AC.currentTime, .1); };
+  u.onend = u.onerror = () => { if (duck) duck.gain.setTargetAtTime(1, AC.currentTime, .3); };
+  speechSynthesis.speak(u);
+}
+function narrTick(t) {
+  const i = segAt(t);
+  if (i === spokenSeg) return;
+  spokenSeg = i;
+  const s = SEGS[i];
+  if (narrOn && t - s.t0 < (s.t1 - s.t0) * 0.35) speak(s.narr);
+}
+function stopSpeech() { if (SPEECH) speechSynthesis.cancel(); if (duck && AC) duck.gain.setTargetAtTime(1, AC.currentTime, .1); }
+
+/* =========================================================
+   播放控制
+   ========================================================= */
+let T = 0, playing = false, schedTo = 0, perf0 = 0;
+function clockNow() { return AC ? AC.currentTime - sess.ctx0 : (performance.now() - perf0) / 1000; }
+function play() {
+  if (T >= DUR - 0.05) T = 0;
+  try { initAudio(); AC.resume(); newSession(T); } catch (e) { AC = null; perf0 = performance.now() - T * 1000; }
+  playing = true; schedTo = T; spokenSeg = -1;
+  if (SPEECH) speechSynthesis.cancel();
+  $("cover").classList.add("hidden");
+  $("playBtn").textContent = "❚❚"; $("playBtn").setAttribute("aria-label", "暫停");
+  requestAnimationFrame(loop);
+}
+function pause() {
+  playing = false; stopSession(); stopSpeech();
+  $("playBtn").textContent = "▶"; $("playBtn").setAttribute("aria-label", "播放");
+}
+function seek(t) {
+  T = clamp(t, 0, DUR);
+  if (playing) { newSession(T); schedTo = T; spokenSeg = -1; stopSpeech(); }
+  draw();
+}
+function loop() {
+  if (!playing) return;
+  T = sess || !AC ? clockNow() : T;
+  if (T >= DUR) { T = DUR; draw(); pause(); return; }
+  if (AC && sess) { const to = T + .3; if (to > schedTo) { schedule(schedTo, to); schedTo = to; } }
+  narrTick(T);
+  draw();
+  requestAnimationFrame(loop);
+}
+const fmt = s => `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+let chipOn = -1;
+function draw() {
+  render(T);
+  $("time").textContent = `${fmt(T)} / ${fmt(DUR)}`;
+  if (document.activeElement !== $("seek")) $("seek").value = T;
+  const i = segAt(T);
+  if (i !== chipOn) { chipOn = i; document.querySelectorAll("#chips button").forEach((b, k) => b.classList.toggle("on", k === i)); }
+}
+
+/* UI wiring */
+function fit() {
+  const vp = $("viewport"), w = vp.clientWidth, h = vp.clientHeight, s = Math.min(w / 1920, h / 1080);
+  $("stage").style.transform = `translate(${(w - 1920 * s) / 2}px,${(h - 1080 * s) / 2}px) scale(${s})`;
+}
+window.addEventListener("resize", fit);
+$("bigPlay").onclick = e => { e.stopPropagation(); play(); };
+$("cover").onclick = () => play();
+$("playBtn").onclick = () => playing ? pause() : play();
+$("seek").addEventListener("input", e => seek(+e.target.value));
+function toggleBtn(id, get, set) { $(id).onclick = () => { set(!get()); $(id).setAttribute("aria-pressed", get()); draw(); }; }
+toggleBtn("narrBtn", () => narrOn, v => { narrOn = v; if (!v) stopSpeech(); });
+toggleBtn("capBtn", () => capOn, v => capOn = v);
+toggleBtn("sfxBtn", () => sfxOn, v => sfxOn = v);
+$("vol").oninput = e => { if (musicVol) musicVol.gain.value = +e.target.value; };
+$("fsBtn").onclick = () => { const a = $("app"); document.fullscreenElement ? document.exitFullscreen() : a.requestFullscreen && a.requestFullscreen(); };
+$("imgBtn").onclick = () => $("drawer").classList.toggle("open");
+$("drawerClose").onclick = () => $("drawer").classList.remove("open");
+$("mix").oninput = e => { realMix = +e.target.value; draw(); };
+document.addEventListener("keydown", e => {
+  if (e.target.tagName === "INPUT" && e.target.type !== "range") return;
+  if (e.code === "Space") { e.preventDefault(); playing ? pause() : play(); }
+  if (e.code === "ArrowRight") seek(T + 5);
+  if (e.code === "ArrowLeft") seek(T - 5);
+});
+(function buildUI() {
+  const chips = $("chips"), ticks = $("ticks");
+  const names = { intro: "片頭", howto: "怎麼讀", recap: "快轉回顧", outro: "片尾" };
+  SEGS.forEach(s => {
+    const b = document.createElement("button"); b.type = "button";
+    b.textContent = s.k === "ch" ? `${CH[s.i].year}` : names[s.k];
+    b.onclick = () => seek(s.t0 + 0.001);
+    chips.appendChild(b);
+    const tk = document.createElement("span"); tk.style.left = `calc(${(s.t0 / DUR * 100).toFixed(2)}% - 1px)`; ticks.appendChild(tk);
+  });
+  const rows = $("rows");
+  CH.forEach((c, i) => {
+    const r = document.createElement("div"); r.className = "row";
+    r.innerHTML = `<b>${c.year}<small>民國${c.year - 1911}年</small></b><input type="file" accept="image/*" aria-label="${c.year} 年影像"><button type="button">清除</button>`;
+    const inp = r.querySelector("input");
+    inp.onchange = () => { const f = inp.files[0]; if (!f) return; if (realImgs[i]) URL.revokeObjectURL(realImgs[i]); realImgs[i] = URL.createObjectURL(f); draw(); };
+    r.querySelector("button").onclick = () => { if (realImgs[i]) URL.revokeObjectURL(realImgs[i]); delete realImgs[i]; inp.value = ""; draw(); };
+    rows.appendChild(r);
+  });
+})();
+
+/* test / still hook: ?t=秒 */
+window.render = render; window.DUR = DUR; window.FPS = FPS;
+const qt = new URLSearchParams(location.search).get("t");
+fit();
+if (qt !== null) { T = +qt; $("cover").classList.add("hidden"); }
+draw();
+(document.fonts ? document.fonts.ready : Promise.resolve()).then(() => { draw(); window.READY = true; });
+</script>
+</body>
+</html>
